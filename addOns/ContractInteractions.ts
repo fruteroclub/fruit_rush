@@ -4,6 +4,7 @@ import dotenv from "dotenv"
 import { createValidatorsAndBatcher } from "./createWallet"
 import fs from "fs"
 import path from "path"
+import { dockerComposeUp } from "./dockerSetUp"
 dotenv.config()
 
 const provider = new ethers.providers.JsonRpcProvider(process.env.RPC)
@@ -65,9 +66,13 @@ async function interactWithContract(numValidators:number, tokenAddressToBeNative
             maxFeePerGasForRetryables: 100000000
         };
 
-        // const transactionResponse = await rollUpContractCreator.createRollup(deployParams);
-        // console.log('Transaction successful:', transactionResponse);
+        const transactionResponse = await rollUpContractCreator.createRollup(deployParams);
+        console.log('Transaction successful:', transactionResponse);
 
+        // Si la transacción de createRollup es exitosa, llama a la función dockerComposeUp
+        if (transactionResponse) {
+            dockerComposeUp();
+        }
 
         const configFile = fs.readFileSync(configPath, 'utf8');
         const configFile2 = fs.readFileSync(configPath2, 'utf8');
@@ -80,7 +85,7 @@ async function interactWithContract(numValidators:number, tokenAddressToBeNative
         config2.batchPoster = batcher.address;
         config2.staker = validators.map(v => v.address);
 
-        chainInfo.forEach(info => {
+        chainInfo.forEach((info: any) => {
             if (info['chain-name'] === "Rafachain Testing") {
                 info['chain-name'] = chainName;
             }
@@ -104,3 +109,4 @@ async function interactWithContract(numValidators:number, tokenAddressToBeNative
 }
 
 interactWithContract(1, tokenAddressToBeNativeToken, chainId, chainName);
+
